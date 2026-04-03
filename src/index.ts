@@ -61,6 +61,8 @@ export type {
 } from './interfaces/index.js';
 
 export type {
+  PluginActivation,
+  PluginAdapterContribution,
   PluginContext,
   PluginCoreApi,
   PluginDownloadCoreApi,
@@ -84,6 +86,7 @@ export type {
   PlaybackHeatmapCell,
   PlaybackTopMediaItem,
   PlaybackUserStats,
+  PluginModule,
   RequestRecord,
 } from './context/plugin-context.js';
 export type {

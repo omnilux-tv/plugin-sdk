@@ -86,6 +86,8 @@ export interface PluginCompatibility {
   metadata?: Record<string, unknown>;
 }
 
+export type PluginRuntimeMode = 'host' | 'worker' | 'auto';
+
 export interface PluginDependency {
   name: string;
   version: string;
@@ -109,6 +111,21 @@ export interface PluginSettingsUiManifest {
   entry: string;
   tabId?: string;
   displayName?: string;
+}
+
+export interface PluginWebManifest {
+  assetRoot: string;
+  settingsUI?: PluginSettingsUiManifest;
+  pages?: PluginPageManifest[];
+  settingsTabs?: PluginSettingsTabManifest[];
+}
+
+export interface PluginServerManifest {
+  entry: string;
+}
+
+export interface PluginRuntimeManifest {
+  mode?: PluginRuntimeMode;
 }
 
 export interface PluginMigrationManifest {
@@ -144,6 +161,7 @@ export interface PluginSettingsTabManifest {
 }
 
 export interface PluginManifest {
+  schemaVersion: 2;
   name: string;
   version: string;
   displayName: string;
@@ -159,12 +177,11 @@ export interface PluginManifest {
   compatibility: PluginCompatibility;
   dependencies?: PluginDependency[];
   permissions: Permission[];
-  entry: string;
+  server: PluginServerManifest;
+  web?: PluginWebManifest;
+  runtime?: PluginRuntimeManifest;
   adapters?: PluginAdapterManifest[];
   routes?: PluginRouteManifest[];
-  settingsUI?: PluginSettingsUiManifest;
-  pages?: PluginPageManifest[];
-  settingsTabs?: PluginSettingsTabManifest[];
   migrations?: PluginMigrationManifest[];
   backgroundJobs?: PluginBackgroundJobManifest[];
 }

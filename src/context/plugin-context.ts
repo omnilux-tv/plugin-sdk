@@ -2,6 +2,12 @@ import type { PluginDatabase } from './plugin-database.js';
 import type { PluginLogger } from './plugin-logger.js';
 import type { PluginSettings } from './plugin-settings.js';
 import type { PluginRouteDefinition } from '../sandbox/route-isolator.js';
+import type {
+  AdapterKind,
+  PluginPageManifest,
+  PluginSettingsTabManifest,
+  PluginSettingsUiManifest,
+} from '../types.js';
 import type { DownloadClientConfig } from '../interfaces/download-client-adapter.js';
 
 export interface RequestRecord {
@@ -185,6 +191,22 @@ export interface PluginSettingsPanelRegistration {
   metadata?: Record<string, unknown>;
 }
 
+export interface PluginAdapterContribution<TAdapter = unknown> {
+  type: AdapterKind | string;
+  id: string;
+  adapter: TAdapter;
+}
+
+export interface PluginActivation {
+  adapters?: PluginAdapterContribution[];
+  routes?: PluginRouteDefinition[];
+  jobs?: PluginJobRegistration[];
+  settingsTabs?: PluginSettingsTabManifest[];
+  pages?: PluginPageManifest[];
+  settingsUI?: PluginSettingsUiManifest;
+  dispose?: () => Promise<void> | void;
+}
+
 export interface PluginDownloadHistoryQuery {
   status?: string;
   clientType?: string;
@@ -288,4 +310,8 @@ export interface PluginContext {
   emit<TPayload = unknown>(event: string, payload: TPayload): void | Promise<void>;
   log: PluginLogger;
   core: PluginCoreApi;
+}
+
+export interface PluginModule {
+  activate?: (context: PluginContext) => Promise<PluginActivation | void> | PluginActivation | void;
 }

@@ -41,12 +41,20 @@ export function validatePluginManifest(input: unknown): ManifestValidationResult
 
   const manifest = input as Partial<PluginManifest>;
 
+  if (manifest.schemaVersion !== 2) {
+    errors.push({
+      code: 'invalid-value',
+      path: 'schemaVersion',
+      message: 'schemaVersion must be 2.',
+      value: manifest.schemaVersion,
+    });
+  }
+
   validateRequiredString(manifest, 'name', errors);
   validateRequiredString(manifest, 'version', errors);
   validateRequiredString(manifest, 'displayName', errors);
   validateRequiredString(manifest, 'description', errors);
   validateRequiredString(manifest, 'category', errors);
-  validateRequiredString(manifest, 'entry', errors);
 
   if (typeof manifest.name === 'string' && !PACKAGE_NAME_RE.test(manifest.name)) {
     errors.push({
@@ -179,6 +187,94 @@ export function validatePluginManifest(input: unknown): ManifestValidationResult
     });
   }
 
+  if (!isRecord(manifest.server)) {
+    errors.push({
+      code: 'missing-field',
+      path: 'server',
+      message: 'Plugin manifest must declare a server artifact block.',
+      value: manifest.server,
+    });
+  } else if (typeof manifest.server.entry !== 'string' || manifest.server.entry.trim().length === 0) {
+    errors.push({
+      code: 'missing-field',
+      path: 'server.entry',
+      message: 'server.entry is required.',
+      value: manifest.server.entry,
+    });
+  }
+
+  if (manifest.web !== undefined) {
+    if (!isRecord(manifest.web)) {
+      errors.push({
+        code: 'invalid-type',
+        path: 'web',
+        message: 'web must be an object when provided.',
+        value: manifest.web,
+      });
+    } else {
+      if (typeof manifest.web.assetRoot !== 'string' || manifest.web.assetRoot.trim().length === 0) {
+        errors.push({
+          code: 'missing-field',
+          path: 'web.assetRoot',
+          message: 'web.assetRoot is required when web is declared.',
+          value: manifest.web.assetRoot,
+        });
+      }
+
+      if (manifest.web.settingsUI !== undefined) {
+        if (!isRecord(manifest.web.settingsUI) || typeof manifest.web.settingsUI.entry !== 'string' || manifest.web.settingsUI.entry.trim().length === 0) {
+          errors.push({
+            code: 'missing-field',
+            path: 'web.settingsUI.entry',
+            message: 'web.settingsUI.entry is required when web.settingsUI is declared.',
+            value: manifest.web.settingsUI,
+          });
+        }
+      }
+
+      if (manifest.web.pages !== undefined && !Array.isArray(manifest.web.pages)) {
+        errors.push({
+          code: 'invalid-type',
+          path: 'web.pages',
+          message: 'web.pages must be an array when provided.',
+          value: manifest.web.pages,
+        });
+      }
+
+      if (manifest.web.settingsTabs !== undefined && !Array.isArray(manifest.web.settingsTabs)) {
+        errors.push({
+          code: 'invalid-type',
+          path: 'web.settingsTabs',
+          message: 'web.settingsTabs must be an array when provided.',
+          value: manifest.web.settingsTabs,
+        });
+      }
+    }
+  }
+
+  if (manifest.runtime !== undefined) {
+    if (!isRecord(manifest.runtime)) {
+      errors.push({
+        code: 'invalid-type',
+        path: 'runtime',
+        message: 'runtime must be an object when provided.',
+        value: manifest.runtime,
+      });
+    } else if (
+      manifest.runtime.mode !== undefined
+      && manifest.runtime.mode !== 'host'
+      && manifest.runtime.mode !== 'worker'
+      && manifest.runtime.mode !== 'auto'
+    ) {
+      errors.push({
+        code: 'invalid-value',
+        path: 'runtime.mode',
+        message: 'runtime.mode must be one of: host, worker, auto.',
+        value: manifest.runtime.mode,
+      });
+    }
+  }
+
   validateOptionalManifestArrays(manifest, errors);
 
   if (errors.length > 0) {
@@ -203,7 +299,7 @@ export function isPermission(value: unknown): value is Permission {
 
 function validateRequiredString(
   value: Partial<PluginManifest>,
-  key: keyof Pick<PluginManifest, 'name' | 'version' | 'displayName' | 'description' | 'category' | 'entry'>,
+  key: keyof Pick<PluginManifest, 'name' | 'version' | 'displayName' | 'description' | 'category'>,
   errors: ManifestValidationError[]
 ): void {
   const field = value[key];
@@ -305,17 +401,6 @@ function validateOptionalManifestArrays(
             value: route,
           });
         }
-      });
-    }
-  }
-
-  if (manifest.settingsUI !== undefined) {
-    if (!isRecord(manifest.settingsUI) || typeof manifest.settingsUI.entry !== 'string' || manifest.settingsUI.entry.trim().length === 0) {
-      errors.push({
-        code: 'missing-field',
-        path: 'settingsUI.entry',
-        message: 'settingsUI.entry is required when settingsUI is declared.',
-        value: manifest.settingsUI,
       });
     }
   }

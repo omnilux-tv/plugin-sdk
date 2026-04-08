@@ -10,7 +10,7 @@ pnpm add @omnilux/plugin-sdk
 
 ## Plugin Lifecycle
 
-Every plugin exports a `register` function that receives a `PluginContext`. Use the context to:
+Every plugin exports an `activate` entrypoint that receives a `PluginContext`. Use the context to:
 
 - **Register adapters** -- download clients, indexers, scanners, VPN providers, metadata sources, and more
 - **Register routes** -- add custom HTTP endpoints to the server
@@ -20,16 +20,21 @@ Every plugin exports a `register` function that receives a `PluginContext`. Use 
 ## Minimal Example
 
 ```typescript
-import type { PluginContext } from '@omnilux/plugin-sdk';
+import type {
+  PluginModule,
+  PluginRouteDefinition,
+} from '@omnilux/plugin-sdk';
 
-export function register(context: PluginContext): void {
-  context.registerRoutes({
-    path: '/my-plugin/status',
-    method: 'GET',
-    handler: async (_req, res) => {
-      res.json({ status: 'ok' });
-    },
-  });
+const statusRoute: PluginRouteDefinition = {
+  path: '/status',
+  method: 'GET',
+  handler: async (_req, res) => {
+    res.json({ status: 'ok' });
+  },
+};
+
+export const activate: PluginModule['activate'] = (context) => {
+  context.registerRoutes([statusRoute]);
 
   context.registerJob({
     id: 'my-plugin-sync',
@@ -40,22 +45,36 @@ export function register(context: PluginContext): void {
   });
 
   context.registerSettingsPanel({
-    entry: './ui/settings.js',
-    tabId: 'my-plugin',
-    displayName: 'My Plugin',
+    id: 'my-plugin.settings',
+    title: 'My Plugin',
+    component: { entry: './ui/settings.js' },
   });
-}
-
-export default register;
+};
 ```
+
+Notes:
+
+- `activate` is the canonical SDK entrypoint
+- `registerRoutes()` accepts an array of `PluginRouteDefinition`
+- `registerSettingsPanel()` accepts `PluginSettingsPanelRegistration` with `id`, `title`, and `component`
+- the SDK does not publish a higher-level review/submission helper; marketplace workflows live outside this package
 
 ## Adapter Types
 
 The SDK ships type definitions for all adapter interfaces: `DownloadClientAdapter`, `IndexerAdapter`, `VpnAdapter`, `ScannerAdapter`, `IptvSourceAdapter`, `GameSourceAdapter`, `MetadataProviderAdapter`, `ArrServiceAdapter`, `NotificationAgentAdapter`, and more.
 
+## Local Verification
+
+```bash
+pnpm install
+pnpm lint
+pnpm build
+pnpm verify:package
+```
+
 ## Documentation
 
-See the [OmniLux docs](https://github.com/omnilux-tv/docs) for the full plugin development guide.
+See the OmniLux plugin docs at `https://docs.omnilux.tv/plugins/overview` for the broader development guide.
 
 ## License
 

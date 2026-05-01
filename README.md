@@ -2,6 +2,8 @@
 
 TypeScript SDK for building OmniLux plugins. Provides the interfaces, types, and runtime context needed to extend the platform with custom adapters, routes, jobs, and settings panels.
 
+Status: internal-for-now, planned-public after package publishing, API stability, documentation, and legal/readiness criteria are met. See `../../omnilux/docs/planning/cross-repo-plans/plugin-ecosystem-plan.md`.
+
 ## Installation
 
 ```bash

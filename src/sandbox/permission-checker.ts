@@ -85,6 +85,10 @@ export class PermissionChecker {
     this.assert(Permission.SchedulerRegister, operation);
   }
 
+  assertRoutesRegister(operation = 'register routes'): void {
+    this.assert(Permission.RoutesRegister, operation);
+  }
+
   assertNotificationsSend(operation = 'send notifications'): void {
     this.assert(Permission.NotificationsSend, operation);
   }
@@ -99,6 +103,10 @@ export class PermissionChecker {
 
   assertPlaybackRead(operation = 'read playback activity'): void {
     this.assert(Permission.PlaybackRead, operation);
+  }
+
+  assertLiveTvReadWrite(operation = 'read or write Live TV state'): void {
+    this.assert(Permission.LiveTvReadWrite, operation);
   }
 
   guard<T>(permission: Permission, operation: string, fn: () => T): T {

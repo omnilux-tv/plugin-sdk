@@ -44,7 +44,7 @@
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "prepack": "pnpm run build",
+    "prepublishOnly": "pnpm run build",
     "verify:package": "node ./scripts/verify-package.mjs"
   },
   "devDependencies": {

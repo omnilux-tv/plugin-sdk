@@ -178,13 +178,32 @@ export function validatePluginManifest(input: unknown): ManifestValidationResult
     });
   }
 
-  if (manifest.signature !== undefined && typeof manifest.signature !== 'string') {
-    errors.push({
-      code: 'invalid-type',
-      path: 'signature',
-      message: 'signature must be a string when provided.',
-      value: manifest.signature,
-    });
+  if (manifest.signature !== undefined) {
+    if (!isRecord(manifest.signature)) {
+      errors.push({
+        code: 'invalid-type',
+        path: 'signature',
+        message: 'signature must be an object with hash and optional algorithm fields.',
+        value: manifest.signature,
+      });
+    } else {
+      if (typeof manifest.signature.hash !== 'string' || manifest.signature.hash.trim().length === 0) {
+        errors.push({
+          code: 'missing-field',
+          path: 'signature.hash',
+          message: 'signature.hash is required and must be a non-empty string.',
+          value: manifest.signature.hash,
+        });
+      }
+      if (manifest.signature.algorithm !== undefined && typeof manifest.signature.algorithm !== 'string') {
+        errors.push({
+          code: 'invalid-type',
+          path: 'signature.algorithm',
+          message: 'signature.algorithm must be a string when provided.',
+          value: manifest.signature.algorithm,
+        });
+      }
+    }
   }
 
   if (!isRecord(manifest.server)) {

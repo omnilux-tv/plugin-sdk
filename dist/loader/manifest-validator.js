@@ -1,0 +1,387 @@
+import { Permission } from '../types.js';
+const VALID_TRUST_LEVELS = ['official', 'verified', 'community'];
+export const PLUGIN_MANIFEST_FILENAME = 'omnilux-plugin.json';
+const SEMVER_RE = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+const PACKAGE_NAME_RE = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/;
+export function validatePluginManifest(input) {
+    const errors = [];
+    if (!isRecord(input)) {
+        return {
+            success: false,
+            errors: [{
+                    code: 'invalid-type',
+                    path: '',
+                    message: 'Plugin manifest must be a JSON object.',
+                    value: input,
+                }],
+        };
+    }
+    const manifest = input;
+    if (manifest.schemaVersion !== 2) {
+        errors.push({
+            code: 'invalid-value',
+            path: 'schemaVersion',
+            message: 'schemaVersion must be 2.',
+            value: manifest.schemaVersion,
+        });
+    }
+    validateRequiredString(manifest, 'name', errors);
+    validateRequiredString(manifest, 'version', errors);
+    validateRequiredString(manifest, 'displayName', errors);
+    validateRequiredString(manifest, 'description', errors);
+    validateRequiredString(manifest, 'category', errors);
+    if (typeof manifest.name === 'string' && !PACKAGE_NAME_RE.test(manifest.name)) {
+        errors.push({
+            code: 'invalid-value',
+            path: 'name',
+            message: 'Plugin name must be lowercase and use a valid npm package name, including an optional scope.',
+            value: manifest.name,
+        });
+    }
+    if (typeof manifest.version === 'string' && !SEMVER_RE.test(manifest.version)) {
+        errors.push({
+            code: 'invalid-value',
+            path: 'version',
+            message: 'Plugin version must be valid semver.',
+            value: manifest.version,
+        });
+    }
+    if (!isRecord(manifest.compatibility)) {
+        errors.push({
+            code: 'missing-field',
+            path: 'compatibility',
+            message: 'Plugin manifest must declare a compatibility block.',
+            value: manifest.compatibility,
+        });
+    }
+    else if (typeof manifest.compatibility.omnilux !== 'string' || manifest.compatibility.omnilux.trim().length === 0) {
+        errors.push({
+            code: 'missing-field',
+            path: 'compatibility.omnilux',
+            message: 'Plugin compatibility must declare a OmniLux version range.',
+            value: manifest.compatibility.omnilux,
+        });
+    }
+    if (!Array.isArray(manifest.permissions)) {
+        errors.push({
+            code: 'missing-field',
+            path: 'permissions',
+            message: 'Plugin manifest must declare a permissions array.',
+            value: manifest.permissions,
+        });
+    }
+    else {
+        const seen = new Set();
+        for (const permission of manifest.permissions) {
+            if (!isPermission(permission)) {
+                errors.push({
+                    code: 'unknown-permission',
+                    path: 'permissions',
+                    message: `Unknown permission "${String(permission)}".`,
+                    value: permission,
+                });
+                continue;
+            }
+            if (seen.has(permission)) {
+                errors.push({
+                    code: 'invalid-value',
+                    path: 'permissions',
+                    message: `Permission "${permission}" is declared more than once.`,
+                    value: permission,
+                });
+                continue;
+            }
+            seen.add(permission);
+        }
+    }
+    if (manifest.defaultEnabled !== undefined && typeof manifest.defaultEnabled !== 'boolean') {
+        errors.push({
+            code: 'invalid-type',
+            path: 'defaultEnabled',
+            message: 'defaultEnabled must be a boolean when provided.',
+            value: manifest.defaultEnabled,
+        });
+    }
+    validateOptionalString(manifest, 'icon', errors);
+    validateOptionalString(manifest, 'license', errors);
+    if (manifest.author !== undefined) {
+        if (typeof manifest.author === 'string') {
+            // string form is fine
+        }
+        else if (isRecord(manifest.author)) {
+            if (typeof manifest.author.name !== 'string' || manifest.author.name.trim().length === 0) {
+                errors.push({
+                    code: 'missing-field',
+                    path: 'author.name',
+                    message: 'author.name is required when author is an object.',
+                    value: manifest.author.name,
+                });
+            }
+        }
+        else {
+            errors.push({
+                code: 'invalid-type',
+                path: 'author',
+                message: 'author must be a string or an object with a name field.',
+                value: manifest.author,
+            });
+        }
+    }
+    if (manifest.trust !== undefined) {
+        if (typeof manifest.trust !== 'string' || !VALID_TRUST_LEVELS.includes(manifest.trust)) {
+            errors.push({
+                code: 'invalid-value',
+                path: 'trust',
+                message: `trust must be one of: ${VALID_TRUST_LEVELS.join(', ')}.`,
+                value: manifest.trust,
+            });
+        }
+    }
+    if (manifest.disclaimer !== undefined && typeof manifest.disclaimer !== 'string') {
+        errors.push({
+            code: 'invalid-type',
+            path: 'disclaimer',
+            message: 'disclaimer must be a string when provided.',
+            value: manifest.disclaimer,
+        });
+    }
+    if (manifest.signature !== undefined) {
+        if (!isRecord(manifest.signature)) {
+            errors.push({
+                code: 'invalid-type',
+                path: 'signature',
+                message: 'signature must be an object with hash and optional algorithm fields.',
+                value: manifest.signature,
+            });
+        }
+        else {
+            if (typeof manifest.signature.hash !== 'string' || manifest.signature.hash.trim().length === 0) {
+                errors.push({
+                    code: 'missing-field',
+                    path: 'signature.hash',
+                    message: 'signature.hash is required and must be a non-empty string.',
+                    value: manifest.signature.hash,
+                });
+            }
+            if (manifest.signature.algorithm !== undefined && typeof manifest.signature.algorithm !== 'string') {
+                errors.push({
+                    code: 'invalid-type',
+                    path: 'signature.algorithm',
+                    message: 'signature.algorithm must be a string when provided.',
+                    value: manifest.signature.algorithm,
+                });
+            }
+        }
+    }
+    if (!isRecord(manifest.server)) {
+        errors.push({
+            code: 'missing-field',
+            path: 'server',
+            message: 'Plugin manifest must declare a server artifact block.',
+            value: manifest.server,
+        });
+    }
+    else if (typeof manifest.server.entry !== 'string' || manifest.server.entry.trim().length === 0) {
+        errors.push({
+            code: 'missing-field',
+            path: 'server.entry',
+            message: 'server.entry is required.',
+            value: manifest.server.entry,
+        });
+    }
+    if (manifest.web !== undefined) {
+        if (!isRecord(manifest.web)) {
+            errors.push({
+                code: 'invalid-type',
+                path: 'web',
+                message: 'web must be an object when provided.',
+                value: manifest.web,
+            });
+        }
+        else {
+            if (typeof manifest.web.assetRoot !== 'string' || manifest.web.assetRoot.trim().length === 0) {
+                errors.push({
+                    code: 'missing-field',
+                    path: 'web.assetRoot',
+                    message: 'web.assetRoot is required when web is declared.',
+                    value: manifest.web.assetRoot,
+                });
+            }
+            if (manifest.web.settingsUI !== undefined) {
+                if (!isRecord(manifest.web.settingsUI) || typeof manifest.web.settingsUI.entry !== 'string' || manifest.web.settingsUI.entry.trim().length === 0) {
+                    errors.push({
+                        code: 'missing-field',
+                        path: 'web.settingsUI.entry',
+                        message: 'web.settingsUI.entry is required when web.settingsUI is declared.',
+                        value: manifest.web.settingsUI,
+                    });
+                }
+            }
+            if (manifest.web.pages !== undefined && !Array.isArray(manifest.web.pages)) {
+                errors.push({
+                    code: 'invalid-type',
+                    path: 'web.pages',
+                    message: 'web.pages must be an array when provided.',
+                    value: manifest.web.pages,
+                });
+            }
+            if (manifest.web.settingsTabs !== undefined && !Array.isArray(manifest.web.settingsTabs)) {
+                errors.push({
+                    code: 'invalid-type',
+                    path: 'web.settingsTabs',
+                    message: 'web.settingsTabs must be an array when provided.',
+                    value: manifest.web.settingsTabs,
+                });
+            }
+        }
+    }
+    if (manifest.runtime !== undefined) {
+        if (!isRecord(manifest.runtime)) {
+            errors.push({
+                code: 'invalid-type',
+                path: 'runtime',
+                message: 'runtime must be an object when provided.',
+                value: manifest.runtime,
+            });
+        }
+        else if (manifest.runtime.mode !== undefined
+            && manifest.runtime.mode !== 'host'
+            && manifest.runtime.mode !== 'worker'
+            && manifest.runtime.mode !== 'auto') {
+            errors.push({
+                code: 'invalid-value',
+                path: 'runtime.mode',
+                message: 'runtime.mode must be one of: host, worker, auto.',
+                value: manifest.runtime.mode,
+            });
+        }
+    }
+    validateOptionalManifestArrays(manifest, errors);
+    if (errors.length > 0) {
+        return { success: false, errors };
+    }
+    return { success: true, manifest: manifest };
+}
+export function assertValidPluginManifest(input) {
+    const result = validatePluginManifest(input);
+    if (!result.success) {
+        const summary = result.errors.map((error) => `${error.path || '<root>'}: ${error.message}`).join('; ');
+        throw new Error(`Invalid ${PLUGIN_MANIFEST_FILENAME}: ${summary}`);
+    }
+    return result.manifest;
+}
+export function isPermission(value) {
+    return typeof value === 'string' && Object.values(Permission).includes(value);
+}
+function validateRequiredString(value, key, errors) {
+    const field = value[key];
+    if (typeof field !== 'string' || field.trim().length === 0) {
+        errors.push({
+            code: 'missing-field',
+            path: key,
+            message: `${key} is required and must be a non-empty string.`,
+            value: field,
+        });
+    }
+}
+function validateOptionalString(value, key, errors) {
+    const field = value[key];
+    if (field !== undefined && typeof field !== 'string') {
+        errors.push({
+            code: 'invalid-type',
+            path: key,
+            message: `${key} must be a string when provided.`,
+            value: field,
+        });
+    }
+}
+function validateOptionalManifestArrays(manifest, errors) {
+    if (manifest.dependencies !== undefined && !Array.isArray(manifest.dependencies)) {
+        errors.push({
+            code: 'invalid-type',
+            path: 'dependencies',
+            message: 'dependencies must be an array when provided.',
+            value: manifest.dependencies,
+        });
+    }
+    if (manifest.adapters !== undefined) {
+        if (!Array.isArray(manifest.adapters)) {
+            errors.push({
+                code: 'invalid-type',
+                path: 'adapters',
+                message: 'adapters must be an array when provided.',
+                value: manifest.adapters,
+            });
+        }
+        else {
+            manifest.adapters.forEach((adapter, index) => {
+                if (!isRecord(adapter)) {
+                    errors.push({
+                        code: 'invalid-type',
+                        path: `adapters[${index}]`,
+                        message: 'Each adapter entry must be an object.',
+                        value: adapter,
+                    });
+                    return;
+                }
+                if (typeof adapter.type !== 'string' || adapter.type.trim().length === 0) {
+                    errors.push({
+                        code: 'missing-field',
+                        path: `adapters[${index}].type`,
+                        message: 'Adapter type is required.',
+                        value: adapter.type,
+                    });
+                }
+                if (typeof adapter.id !== 'string' || adapter.id.trim().length === 0) {
+                    errors.push({
+                        code: 'missing-field',
+                        path: `adapters[${index}].id`,
+                        message: 'Adapter id is required.',
+                        value: adapter.id,
+                    });
+                }
+            });
+        }
+    }
+    if (manifest.routes !== undefined) {
+        if (!Array.isArray(manifest.routes)) {
+            errors.push({
+                code: 'invalid-type',
+                path: 'routes',
+                message: 'routes must be an array when provided.',
+                value: manifest.routes,
+            });
+        }
+        else {
+            manifest.routes.forEach((route, index) => {
+                if (!isRecord(route) || typeof route.path !== 'string' || route.path.trim().length === 0) {
+                    errors.push({
+                        code: 'missing-field',
+                        path: `routes[${index}].path`,
+                        message: 'Route path is required.',
+                        value: route,
+                    });
+                }
+            });
+        }
+    }
+    if (manifest.migrations !== undefined && !Array.isArray(manifest.migrations)) {
+        errors.push({
+            code: 'invalid-type',
+            path: 'migrations',
+            message: 'migrations must be an array when provided.',
+            value: manifest.migrations,
+        });
+    }
+    if (manifest.backgroundJobs !== undefined && !Array.isArray(manifest.backgroundJobs)) {
+        errors.push({
+            code: 'invalid-type',
+            path: 'backgroundJobs',
+            message: 'backgroundJobs must be an array when provided.',
+            value: manifest.backgroundJobs,
+        });
+    }
+}
+function isRecord(value) {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}

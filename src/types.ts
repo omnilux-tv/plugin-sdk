@@ -11,11 +11,13 @@ export enum Permission {
   UiSettingsTab = 'ui:settings-tab',
   UiPage = 'ui:page',
   UiDashboardWidget = 'ui:dashboard-widget',
+  RoutesRegister = 'routes:register',
   SchedulerRegister = 'scheduler:register',
   NotificationsSend = 'notifications:send',
   RequestsReadWrite = 'requests:read-write',
   LibraryRead = 'library:read',
   PlaybackRead = 'playback:read',
+  LiveTvReadWrite = 'live-tv:read-write',
 }
 
 export type TrustLevel = 'official' | 'verified' | 'community';
@@ -33,11 +35,13 @@ export const PERMISSION_RISK: Record<Permission, 'low' | 'medium' | 'high'> = {
   [Permission.UiSettingsTab]: 'low',
   [Permission.UiPage]: 'low',
   [Permission.UiDashboardWidget]: 'low',
+  [Permission.RoutesRegister]: 'medium',
   [Permission.SchedulerRegister]: 'low',
   [Permission.NotificationsSend]: 'medium',
   [Permission.RequestsReadWrite]: 'medium',
   [Permission.LibraryRead]: 'low',
   [Permission.PlaybackRead]: 'low',
+  [Permission.LiveTvReadWrite]: 'medium',
 };
 
 export const COMMUNITY_PLUGIN_DISCLAIMER =
@@ -172,7 +176,10 @@ export interface PluginManifest {
   license?: string;
   trust?: TrustLevel;
   disclaimer?: string;
-  signature?: string;
+  signature?: {
+    hash: string;
+    algorithm?: string;
+  };
   defaultEnabled?: boolean;
   compatibility: PluginCompatibility;
   dependencies?: PluginDependency[];

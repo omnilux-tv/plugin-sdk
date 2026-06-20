@@ -10,7 +10,7 @@ This repository is part of the official OmniLux multi-repo workspace. Use the ro
 - Manifest: `../../workspace.repositories.json`
 - Contracts: `../../contracts/`
 
-Status: internal-for-now, planned-public after package publishing, API stability, documentation, and legal/readiness criteria are met. See `../../contracts/plugin-ecosystem-plan.md`.
+Status: the Plugin SDK follows the shared workspace contract in `../../contracts/plugin-ecosystem-plan.md`.
 
 ## Installation
 

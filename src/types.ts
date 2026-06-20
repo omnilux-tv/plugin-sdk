@@ -45,7 +45,7 @@ export const PERMISSION_RISK: Record<Permission, 'low' | 'medium' | 'high'> = {
 };
 
 export const COMMUNITY_PLUGIN_DISCLAIMER =
-  'This plugin is provided by a third-party developer and is not affiliated with, endorsed by, or supported by OmniLux. ' +
+  'This plugin is provided by a third-party publisher and is not affiliated with, endorsed by, or supported by OmniLux. ' +
   'By installing this plugin, you acknowledge that OmniLux bears no responsibility for its functionality, security, ' +
   'or any consequences of its use. The plugin author is solely responsible for the plugin and its compliance with applicable laws.';
 

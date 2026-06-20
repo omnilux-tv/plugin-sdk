@@ -85,7 +85,7 @@ export function validatePluginManifest(input: unknown): ManifestValidationResult
     errors.push({
       code: 'missing-field',
       path: 'compatibility.omnilux',
-      message: 'Plugin compatibility must declare a OmniLux version range.',
+      message: 'Plugin compatibility must declare an OmniLux version range.',
       value: manifest.compatibility.omnilux,
     });
   }

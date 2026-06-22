@@ -263,6 +263,64 @@ export interface PluginCoreApi {
     downloads?: PluginDownloadCoreApi;
     requests?: PluginRequestsApi;
 }
+export interface PluginRuntimeHttpClient {
+    get(url: string, config?: Record<string, unknown>): Promise<{
+        data: unknown;
+    }>;
+}
+export interface PluginRuntimeEgressApi {
+    createHttpClient(label: string): PluginRuntimeHttpClient;
+}
+export interface PluginRuntimeRouteApi {
+    throwRouteError(status: number, error: unknown, details?: Record<string, unknown>): never;
+}
+export interface PluginRuntimePreferenceScope {
+    profileId?: string;
+}
+export interface PluginRuntimeUserPreferencesApi {
+    normalizePreferenceScope(raw: unknown): PluginRuntimePreferenceScope;
+}
+export interface PluginRuntimePlexWatchlistConfig {
+    userId: number;
+    profileId?: string;
+    plexToken: string;
+    enabled: boolean;
+    autoRequest: boolean;
+    removeMissing: boolean;
+    lastSyncedAt?: string;
+    lastStatus?: string;
+    lastError?: string;
+}
+export interface PluginRuntimePlexWatchlistSyncResult {
+    synced: number;
+    imported: number;
+    requested: number;
+    removed: number;
+    errors: number;
+    status: 'ok' | 'token-expired' | 'error';
+    message?: string;
+}
+export interface PluginRuntimePlexWatchlistRunResult {
+    users: number;
+    totalSynced: number;
+    totalImported: number;
+    totalRequested: number;
+    totalRemoved: number;
+}
+export interface PluginRuntimePlexWatchlistApi {
+    getConfig(userId: number, profileId?: string): Promise<PluginRuntimePlexWatchlistConfig | null>;
+    upsertConfig(userId: number, profileId: string | undefined, plexToken: string, enabled: boolean, autoRequest: boolean, removeMissing: boolean): Promise<void>;
+    deleteConfig(userId: number, profileId?: string): Promise<void>;
+    listItems(userId: number, profileId?: string): Promise<Array<Record<string, unknown>>>;
+    syncUser(userId: number, profileId: string | undefined, plexToken: string, autoRequest: boolean, removeMissing: boolean): Promise<PluginRuntimePlexWatchlistSyncResult>;
+    runSync(): Promise<PluginRuntimePlexWatchlistRunResult>;
+}
+export interface PluginRuntimeCapabilities {
+    egress?: PluginRuntimeEgressApi;
+    routes?: PluginRuntimeRouteApi;
+    userPreferences?: PluginRuntimeUserPreferencesApi;
+    plexWatchlist?: PluginRuntimePlexWatchlistApi;
+}
 export interface PluginNotificationOptions {
     eventType?: string;
     url?: string;
@@ -291,6 +349,7 @@ export interface PluginContext {
     emit<TPayload = unknown>(event: string, payload: TPayload): void | Promise<void>;
     log: PluginLogger;
     core: PluginCoreApi;
+    runtime?: PluginRuntimeCapabilities;
 }
 export interface PluginModule {
     activate?: (context: PluginContext) => Promise<PluginActivation | void> | PluginActivation | void;

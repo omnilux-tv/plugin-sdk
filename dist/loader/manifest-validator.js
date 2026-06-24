@@ -1,4 +1,5 @@
 import { Permission } from '../types.js';
+import { normalizePluginRoutePath } from '../sandbox/route-isolator.js';
 const VALID_TRUST_LEVELS = ['official', 'verified', 'community'];
 export const PLUGIN_MANIFEST_FILENAME = 'omnilux-plugin.json';
 const SEMVER_RE = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
@@ -360,6 +361,18 @@ function validateOptionalManifestArrays(manifest, errors) {
                         path: `routes[${index}].path`,
                         message: 'Route path is required.',
                         value: route,
+                    });
+                    return;
+                }
+                try {
+                    normalizePluginRoutePath(route.path);
+                }
+                catch (error) {
+                    errors.push({
+                        code: 'invalid-value',
+                        path: `routes[${index}].path`,
+                        message: error instanceof Error ? error.message : 'Route path is invalid.',
+                        value: route.path,
                     });
                 }
             });

@@ -1,4 +1,5 @@
 import { Permission, type PluginManifest, type TrustLevel } from '../types.js';
+import { normalizePluginRoutePath } from '../sandbox/route-isolator.js';
 
 const VALID_TRUST_LEVELS: TrustLevel[] = ['official', 'verified', 'community'];
 
@@ -418,6 +419,18 @@ function validateOptionalManifestArrays(
             path: `routes[${index}].path`,
             message: 'Route path is required.',
             value: route,
+          });
+          return;
+        }
+
+        try {
+          normalizePluginRoutePath(route.path);
+        } catch (error) {
+          errors.push({
+            code: 'invalid-value',
+            path: `routes[${index}].path`,
+            message: error instanceof Error ? error.message : 'Route path is invalid.',
+            value: route.path,
           });
         }
       });

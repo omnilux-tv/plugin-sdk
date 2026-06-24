@@ -10,6 +10,6 @@ export type { ManifestValidationError, ManifestValidationErrorCode, ManifestVali
 export { PLATFORM_EVENTS } from './platform-events.js';
 export type { PlatformEventName } from './platform-events.js';
 export { PermissionChecker, PermissionDeniedError, createPermissionChecker, } from './sandbox/permission-checker.js';
-export { getPluginRouteBasePath, isolatePluginRoutes, } from './sandbox/route-isolator.js';
+export { getPluginRouteBasePath, isolatePluginRoutes, normalizePluginRoutePath, } from './sandbox/route-isolator.js';
 export type { IsolatedPluginRoute, PluginRouteAuthMode, PluginRouteDefinition, PluginRouteMethod, RouteIsolationOptions, } from './sandbox/route-isolator.js';
 //# sourceMappingURL=index.d.ts.map

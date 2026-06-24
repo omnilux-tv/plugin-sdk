@@ -5,14 +5,14 @@ export function getPluginRouteBasePath(pluginId) {
     return `/api/plugins/${encodeURIComponent(pluginId)}`;
 }
 export function isolatePluginRoutes(pluginId, routes, options = {}) {
-    const basePath = normalizeRoutePath(options.basePath ?? getPluginRouteBasePath(pluginId));
+    const basePath = normalizePluginRoutePath(options.basePath ?? getPluginRouteBasePath(pluginId));
     const authMiddlewares = normalizeMiddleware(options.authMiddleware);
     const adminMiddlewares = normalizeMiddleware(options.adminMiddleware);
     return routes.map((route) => {
-        const routePath = normalizeRoutePath(route.path);
+        const routePath = normalizePluginRoutePath(route.path);
         const routeMiddlewares = composeRouteMiddlewares(route.auth, route.middlewares, authMiddlewares, adminMiddlewares);
         const resolvedMountPath = route.mountPath
-            ? normalizeRoutePath(route.mountPath)
+            ? normalizePluginRoutePath(route.mountPath)
             : routePath === '/'
                 ? basePath
                 : `${basePath}${routePath}`;
@@ -44,7 +44,7 @@ function ensureRouteWithinNamespace(pluginId, basePath, resolvedMountPath, rawMo
     }
     throw new Error(`Invalid mountPath "${rawMountPath}" for plugin "${pluginId}": custom mount paths must stay within "${basePath}" unless allowCustomMountPath is true.`);
 }
-function normalizeRoutePath(path) {
+export function normalizePluginRoutePath(path) {
     const trimmed = path.trim();
     if (trimmed.length === 0 || trimmed === '/') {
         return '/';

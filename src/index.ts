@@ -129,6 +129,7 @@ export {
 export {
   getPluginRouteBasePath,
   isolatePluginRoutes,
+  normalizePluginRoutePath,
 } from './sandbox/route-isolator.js';
 export type {
   IsolatedPluginRoute,

@@ -21,4 +21,5 @@ export interface RouteIsolationOptions<TMiddleware = unknown> {
 }
 export declare function getPluginRouteBasePath(pluginId: string): string;
 export declare function isolatePluginRoutes<THandler = unknown, TMiddleware = unknown>(pluginId: string, routes: PluginRouteDefinition<THandler, TMiddleware>[], options?: RouteIsolationOptions<TMiddleware>): IsolatedPluginRoute<THandler, TMiddleware>[];
+export declare function normalizePluginRoutePath(path: string): string;
 //# sourceMappingURL=route-isolator.d.ts.map

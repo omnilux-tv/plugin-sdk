@@ -37,12 +37,12 @@ export function isolatePluginRoutes<THandler = unknown, TMiddleware = unknown>(
   routes: PluginRouteDefinition<THandler, TMiddleware>[],
   options: RouteIsolationOptions<TMiddleware> = {}
 ): IsolatedPluginRoute<THandler, TMiddleware>[] {
-  const basePath = normalizeRoutePath(options.basePath ?? getPluginRouteBasePath(pluginId));
+  const basePath = normalizePluginRoutePath(options.basePath ?? getPluginRouteBasePath(pluginId));
   const authMiddlewares = normalizeMiddleware(options.authMiddleware);
   const adminMiddlewares = normalizeMiddleware(options.adminMiddleware);
 
   return routes.map((route) => {
-    const routePath = normalizeRoutePath(route.path);
+    const routePath = normalizePluginRoutePath(route.path);
     const routeMiddlewares = composeRouteMiddlewares(
       route.auth,
       route.middlewares,
@@ -50,7 +50,7 @@ export function isolatePluginRoutes<THandler = unknown, TMiddleware = unknown>(
       adminMiddlewares,
     );
     const resolvedMountPath = route.mountPath
-      ? normalizeRoutePath(route.mountPath)
+      ? normalizePluginRoutePath(route.mountPath)
       : routePath === '/'
         ? basePath
         : `${basePath}${routePath}`;
@@ -96,7 +96,7 @@ function ensureRouteWithinNamespace(pluginId: string, basePath: string, resolved
   );
 }
 
-function normalizeRoutePath(path: string): string {
+export function normalizePluginRoutePath(path: string): string {
   const trimmed = path.trim();
   if (trimmed.length === 0 || trimmed === '/') {
     return '/';

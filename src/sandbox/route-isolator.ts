@@ -43,13 +43,12 @@ export function isolatePluginRoutes<THandler = unknown, TMiddleware = unknown>(
 
   return routes.map((route) => {
     const routePath = normalizeRoutePath(route.path);
-    const routeMiddlewares = route.auth === 'none'
-      ? [...(route.middlewares ?? [])]
-      : route.auth === 'optional'
-        ? [...(route.middlewares ?? [])]
-        : route.auth === 'admin'
-          ? [...authMiddlewares, ...adminMiddlewares, ...(route.middlewares ?? [])]
-          : [...authMiddlewares, ...(route.middlewares ?? [])];
+    const routeMiddlewares = composeRouteMiddlewares(
+      route.auth,
+      route.middlewares,
+      authMiddlewares,
+      adminMiddlewares,
+    );
     const resolvedMountPath = route.mountPath
       ? normalizeRoutePath(route.mountPath)
       : routePath === '/'
@@ -68,6 +67,23 @@ export function isolatePluginRoutes<THandler = unknown, TMiddleware = unknown>(
       mountPath,
     };
   });
+}
+
+function composeRouteMiddlewares<TMiddleware>(
+  authMode: PluginRouteAuthMode | undefined,
+  routeMiddlewares: TMiddleware[] | undefined,
+  authMiddlewares: TMiddleware[],
+  adminMiddlewares: TMiddleware[],
+): TMiddleware[] {
+  if (authMode === 'none' || authMode === 'optional') {
+    return [...(routeMiddlewares ?? [])];
+  }
+
+  if (authMode === 'admin') {
+    return [...authMiddlewares, ...adminMiddlewares, ...(routeMiddlewares ?? [])];
+  }
+
+  return [...authMiddlewares, ...(routeMiddlewares ?? [])];
 }
 
 function ensureRouteWithinNamespace(pluginId: string, basePath: string, resolvedMountPath: string, rawMountPath: string): string {

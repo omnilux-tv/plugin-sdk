@@ -9,8 +9,18 @@ This repository is part of the official OmniLux multi-repo workspace. Use the ro
 - Onboarding: `../../ONBOARDING.md`
 - Manifest: `../../workspace.repositories.json`
 - Contracts: `../../contracts/`
+- Context: `./CONTEXT.md`
 
-Status: the Plugin SDK follows the shared workspace contract in `../../contracts/plugin-ecosystem-plan.md`.
+## Canonical Contracts
+
+- Plugin ecosystem plan: `../../contracts/plugin-ecosystem-plan.md`
+
+Status: the Plugin SDK follows the shared workspace plugin ecosystem contract.
+
+Ownership boundary:
+
+- owns SDK interfaces, plugin context types, adapter contracts, route registration, job registration, and settings panel registration
+- does not own marketplace review, plugin submission, or runtime plugin installation workflows
 
 ## Installation
 

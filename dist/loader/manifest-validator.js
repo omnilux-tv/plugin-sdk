@@ -208,6 +208,9 @@ export function validatePluginManifest(input) {
                     value: manifest.web.assetRoot,
                 });
             }
+            else {
+                validateRelativeManifestPath(manifest.web.assetRoot, 'web.assetRoot', errors);
+            }
             if (manifest.web.settingsUI !== undefined) {
                 if (!isRecord(manifest.web.settingsUI) || typeof manifest.web.settingsUI.entry !== 'string' || manifest.web.settingsUI.entry.trim().length === 0) {
                     errors.push({
@@ -216,6 +219,9 @@ export function validatePluginManifest(input) {
                         message: 'web.settingsUI.entry is required when web.settingsUI is declared.',
                         value: manifest.web.settingsUI,
                     });
+                }
+                else {
+                    validateWebAssetEntryPath(manifest.web.assetRoot, manifest.web.settingsUI.entry, 'web.settingsUI.entry', errors);
                 }
             }
             if (manifest.web.pages !== undefined && !Array.isArray(manifest.web.pages)) {
@@ -226,12 +232,26 @@ export function validatePluginManifest(input) {
                     value: manifest.web.pages,
                 });
             }
+            else if (Array.isArray(manifest.web.pages)) {
+                manifest.web.pages.forEach((page, index) => {
+                    if (isRecord(page) && typeof page.entry === 'string') {
+                        validateWebAssetEntryPath(manifest.web?.assetRoot, page.entry, `web.pages[${index}].entry`, errors);
+                    }
+                });
+            }
             if (manifest.web.settingsTabs !== undefined && !Array.isArray(manifest.web.settingsTabs)) {
                 errors.push({
                     code: 'invalid-type',
                     path: 'web.settingsTabs',
                     message: 'web.settingsTabs must be an array when provided.',
                     value: manifest.web.settingsTabs,
+                });
+            }
+            else if (Array.isArray(manifest.web.settingsTabs)) {
+                manifest.web.settingsTabs.forEach((tab, index) => {
+                    if (isRecord(tab) && typeof tab.entry === 'string') {
+                        validateWebAssetEntryPath(manifest.web?.assetRoot, tab.entry, `web.settingsTabs[${index}].entry`, errors);
+                    }
                 });
             }
         }
@@ -295,6 +315,57 @@ function validateOptionalString(value, key, errors) {
             value: field,
         });
     }
+}
+function validateWebAssetEntryPath(assetRoot, entry, path, errors) {
+    const beforeCount = errors.length;
+    validateRelativeManifestPath(entry, path, errors);
+    if (errors.length !== beforeCount || typeof assetRoot !== 'string' || !isSafeRelativeManifestPath(assetRoot)) {
+        return;
+    }
+    const normalizedRoot = normalizeManifestPath(assetRoot);
+    if (normalizedRoot.length === 0) {
+        return;
+    }
+    const normalizedEntry = normalizeManifestPath(entry);
+    if (normalizedEntry !== normalizedRoot && !normalizedEntry.startsWith(`${normalizedRoot}/`)) {
+        errors.push({
+            code: 'invalid-value',
+            path,
+            message: 'Plugin web entry paths must be inside web.assetRoot.',
+            value: entry,
+        });
+    }
+}
+function validateRelativeManifestPath(value, path, errors) {
+    if (isSafeRelativeManifestPath(value)) {
+        return;
+    }
+    errors.push({
+        code: 'invalid-value',
+        path,
+        message: 'Plugin web paths must be relative and must not contain traversal segments.',
+        value,
+    });
+}
+function isSafeRelativeManifestPath(value) {
+    const trimmed = value.trim();
+    if (!trimmed) {
+        return false;
+    }
+    const normalized = trimmed.replace(/\\/g, '/');
+    if (normalized.startsWith('/') || normalized.startsWith('//') || /^[A-Za-z]:/.test(trimmed)) {
+        return false;
+    }
+    return normalized.split('/').every((segment) => segment !== '..');
+}
+function normalizeManifestPath(value) {
+    const normalized = value
+        .trim()
+        .replace(/\\/g, '/')
+        .replace(/^\.\/+/, '')
+        .replace(/\/+/g, '/')
+        .replace(/\/$/, '');
+    return normalized === '.' ? '' : normalized;
 }
 function validateOptionalManifestArrays(manifest, errors) {
     if (manifest.dependencies !== undefined && !Array.isArray(manifest.dependencies)) {

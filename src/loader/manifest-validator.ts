@@ -239,6 +239,8 @@ export function validatePluginManifest(input: unknown): ManifestValidationResult
           message: 'web.assetRoot is required when web is declared.',
           value: manifest.web.assetRoot,
         });
+      } else {
+        validateRelativeManifestPath(manifest.web.assetRoot, 'web.assetRoot', errors);
       }
 
       if (manifest.web.settingsUI !== undefined) {
@@ -249,6 +251,13 @@ export function validatePluginManifest(input: unknown): ManifestValidationResult
             message: 'web.settingsUI.entry is required when web.settingsUI is declared.',
             value: manifest.web.settingsUI,
           });
+        } else {
+          validateWebAssetEntryPath(
+            manifest.web.assetRoot,
+            manifest.web.settingsUI.entry,
+            'web.settingsUI.entry',
+            errors,
+          );
         }
       }
 
@@ -259,6 +268,12 @@ export function validatePluginManifest(input: unknown): ManifestValidationResult
           message: 'web.pages must be an array when provided.',
           value: manifest.web.pages,
         });
+      } else if (Array.isArray(manifest.web.pages)) {
+        manifest.web.pages.forEach((page, index) => {
+          if (isRecord(page) && typeof page.entry === 'string') {
+            validateWebAssetEntryPath(manifest.web?.assetRoot, page.entry, `web.pages[${index}].entry`, errors);
+          }
+        });
       }
 
       if (manifest.web.settingsTabs !== undefined && !Array.isArray(manifest.web.settingsTabs)) {
@@ -267,6 +282,12 @@ export function validatePluginManifest(input: unknown): ManifestValidationResult
           path: 'web.settingsTabs',
           message: 'web.settingsTabs must be an array when provided.',
           value: manifest.web.settingsTabs,
+        });
+      } else if (Array.isArray(manifest.web.settingsTabs)) {
+        manifest.web.settingsTabs.forEach((tab, index) => {
+          if (isRecord(tab) && typeof tab.entry === 'string') {
+            validateWebAssetEntryPath(manifest.web?.assetRoot, tab.entry, `web.settingsTabs[${index}].entry`, errors);
+          }
         });
       }
     }
@@ -347,6 +368,76 @@ function validateOptionalString(
       value: field,
     });
   }
+}
+
+function validateWebAssetEntryPath(
+  assetRoot: unknown,
+  entry: string,
+  path: string,
+  errors: ManifestValidationError[]
+): void {
+  const beforeCount = errors.length;
+  validateRelativeManifestPath(entry, path, errors);
+  if (errors.length !== beforeCount || typeof assetRoot !== 'string' || !isSafeRelativeManifestPath(assetRoot)) {
+    return;
+  }
+
+  const normalizedRoot = normalizeManifestPath(assetRoot);
+  if (normalizedRoot.length === 0) {
+    return;
+  }
+
+  const normalizedEntry = normalizeManifestPath(entry);
+  if (normalizedEntry !== normalizedRoot && !normalizedEntry.startsWith(`${normalizedRoot}/`)) {
+    errors.push({
+      code: 'invalid-value',
+      path,
+      message: 'Plugin web entry paths must be inside web.assetRoot.',
+      value: entry,
+    });
+  }
+}
+
+function validateRelativeManifestPath(
+  value: string,
+  path: string,
+  errors: ManifestValidationError[]
+): void {
+  if (isSafeRelativeManifestPath(value)) {
+    return;
+  }
+
+  errors.push({
+    code: 'invalid-value',
+    path,
+    message: 'Plugin web paths must be relative and must not contain traversal segments.',
+    value,
+  });
+}
+
+function isSafeRelativeManifestPath(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  const normalized = trimmed.replace(/\\/g, '/');
+  if (normalized.startsWith('/') || normalized.startsWith('//') || /^[A-Za-z]:/.test(trimmed)) {
+    return false;
+  }
+
+  return normalized.split('/').every((segment) => segment !== '..');
+}
+
+function normalizeManifestPath(value: string): string {
+  const normalized = value
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\.\/+/, '')
+    .replace(/\/+/g, '/')
+    .replace(/\/$/, '');
+
+  return normalized === '.' ? '' : normalized;
 }
 
 function validateOptionalManifestArrays(

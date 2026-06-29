@@ -45,9 +45,13 @@
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "lint": "tsc -p tsconfig.json --noEmit",
     "prepublishOnly": "pnpm run build",
-    "verify:package": "node ./scripts/verify-package.mjs"
+    "verify:package": "node ./scripts/verify-package.mjs",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.9.1",
     "typescript": "^5.8.2"
   }
 }
